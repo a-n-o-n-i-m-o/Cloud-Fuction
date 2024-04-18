@@ -1,8 +1,6 @@
-                    def deployFunction(String functionName) {
+def deployFunction(String functionName) {
                         dir("${RUTA_SOURCE}/$functionName/$RUTA_SOURCE_FILES") {
                                 withCredentials([file(credentialsId: "${GCP_SERVICE_ACCOUNT_CREDENTIALS_ID}", variable: 'SECRET')]) {
-                                    sh "ls -lsa"
-                                    sh "pwd"
                                     sh "gcloud auth activate-service-account --key-file=\$SECRET"
                                     sh "gcloud config set project ${GCP_PROJECT_ID}"
                                     sh """ gcloud alpha functions deploy ${functionName} \
@@ -19,10 +17,10 @@
                                             --source=. \
                                             --env-vars-file .env.yaml \
                                             --allow-unauthenticated """
-                                }
-                            }
-                    }
-               def functionNames = [
+         }
+     }
+}
+def functionNames = [
     'ingesta-crossnet-data-plana'
 ]     
 pipeline {
