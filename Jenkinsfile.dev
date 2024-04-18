@@ -1,72 +1,36 @@
-def deployFunction(String functionName) {
-    dir("${RUTA_SOURCE}/${functionName}/${RUTA_SOURCE_FILES}") {
-        withCredentials([file(credentialsId: "${GCP_SERVICE_ACCOUNT1}", variable: 'SECRET_FILE')]) {
-            sh "gcloud auth activate-service-account --key-file=\$SECRET_FILE"
-
-            sh "gcloud config set project ${GCP_PROJECT_ID}"
-            
-            // Verifica si el archivo de variables de entorno existe
-            def envFilePath = "${RUTA_SOURCE}/${functionName}/${RUTA_SOURCE_FILES}/.env.yaml"
-            if (fileExists(envFilePath)) {
-                try {
-                    sh """gcloud alpha functions deploy ${functionName} \
-                            --gen2 \
-                            --region=${GCP_LOCATION} \
-                            --runtime=${GCP_RUNTIME} \
-                            --trigger-http \
-                            --memory ${GCP_MEMORY} \
-                            --entry-point ${GCP_ENTRY_POINT} \
-                            --timeout ${GCP_TIMEOUT} \
-                            --max-instances ${GCP_MAXINSTANCES} \
-                            --ingress-settings all \
-                            --service-account ${GCP_SERVICE_ACCOUNT} \
-                            --source=. \
-                            --env-vars-file ${envFilePath} \
-                            --allow-unauthenticated"""
-                } catch (Exception e) {
-                    echo "Error deploying function ${functionName}: ${e.message}"
-                    // Manejar error según tus necesidades (ej. marcar como fallida, notificaciones, etc.)
-                }
-            } else {
-                echo "Environment file not found for function ${functionName}: ${envFilePath}"
-                // Manejar la falta del archivo de entorno según tus necesidades
-            }
-        }
-    }
-}
-
-
-def functionNames = [
-    'ingesta-crossnet-data-plana'
-]   
-
 pipeline {
-
-        agent any
-
-        environment {
-                RUTA_SOURCE = 'source'
-                RUTA_SOURCE_FILES = 'src'
-                GCP_NAME = 'ingesta-crossnet-data-plana'
-                GCP_SERVICE_ACCOUNT1 = 'devioz-corporativo-gcp-devops-analitica-dev'
-                GCP_PROJECT_ID = 'devioz-pe-dev-analitica'
-                GCP_SERVICE_ACCOUNT = 'alfredo@devioz-pe-dev-analitica.iam.gserviceaccount.com'
-                GCP_RUNTIME = 'python310'
-                GCP_ENTRY_POINT = 'main'
-                GCP_MEMORY = '16384'
-                GCP_TIMEOUT = 540
-                GCP_MAXINTANCES = 2
-                GCP_LOCATION = 'us-central1'
-        }
-
-        stages {
+    agent any
+    
+    environment {
+        // Ruta de los archivos fuente
+        RUTA_SOURCE = 'source'
+        RUTA_SOURCE_FILES = 'src'
+        
+        // Configuración de la función de Google Cloud
+        GCP_PROJECT_ID = 'devioz-pe-dev-analitica'
+        GCP_SERVICE_ACCOUNT = 'devioz-corporativo-gcp-devops-analitica-dev'
+        GCP_SERVICE_ACCOUNT_EMAIL = 'alfredo@devioz-pe-dev-analitica.iam.gserviceaccount.com'
+        GCP_LOCATION = 'us-central1'
+        GCP_RUNTIME = 'python310'
+        GCP_MEMORY = '16384MB'
+        GCP_TIMEOUT = '540s'
+        GCP_MAX_INSTANCES = '2'
+        GCP_ALLOW_UNAUTHENTICATED = true
+        
+        // Nombres de las funciones a desplegar
+        functionNames = [
+            'ingesta-crossnet-data-plana'
+        ]
+    }
+    
+    stages {
         stage('Descargar Fuentes') {
             steps {
-                deleteDir()
-                    checkout scm
+                deleteDir() // Limpia el directorio de trabajo
+                checkout scm // Descarga el código fuente del repositorio
             }
         }
-
+        
         stage('Despliegue Funciones') {
             steps {
                 script {
@@ -76,10 +40,40 @@ pipeline {
                 }
             }
         }
-
+        
         stage('Limpiar Workspace') {
             steps {
-                deleteDir()
+                deleteDir() // Limpia el espacio de trabajo
+            }
+        }
+    }
+    
+    // Función para desplegar una función en Google Cloud
+    def deployFunction(String functionName) {
+        dir("${RUTA_SOURCE}/${functionName}/${RUTA_SOURCE_FILES}") {
+            withCredentials([file(credentialsId: "${GCP_SERVICE_ACCOUNT}", variable: 'SERVICE_ACCOUNT_FILE')]) {
+                sh """
+                # Autentica el servicio de cuenta
+                gcloud auth activate-service-account --key-file=\$SERVICE_ACCOUNT_FILE
+                
+                # Configura el ID del proyecto
+                gcloud config set project ${GCP_PROJECT_ID}
+                
+                # Despliega la función de Google Cloud
+                gcloud functions deploy ${functionName} \
+                    --gen2 \
+                    --region=${GCP_LOCATION} \
+                    --runtime=${GCP_RUNTIME} \
+                    --trigger-http \
+                    --memory=${GCP_MEMORY} \
+                    --entry-point=main \
+                    --timeout=${GCP_TIMEOUT} \
+                    --max-instances=${GCP_MAX_INSTANCES} \
+                    --ingress-settings=all \
+                    --service-account=${GCP_SERVICE_ACCOUNT_EMAIL} \
+                    --source=. \
+                    --allow-unauthenticated=${GCP_ALLOW_UNAUTHENTICATED}
+                """
             }
         }
     }
