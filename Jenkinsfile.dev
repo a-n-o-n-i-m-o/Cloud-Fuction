@@ -34,6 +34,7 @@ pipeline {
                 RUTA_SOURCE = 'source'
                 RUTA_SOURCE_FILES = 'src'
                 GCP_NAME = 'ingesta-crossnet-data-plana'
+                GCP_SERVICE_ACCOUNT1 = 'devioz-corporativo-gcp-devops-analitica-dev'
                 GCP_PROJECT_ID = 'devioz-pe-dev-analitica'
                 GCP_SERVICE_ACCOUNT = 'alfredo@devioz-pe-dev-analitica.iam.gserviceaccount.com'
                 GCP_RUNTIME = 'python310'
