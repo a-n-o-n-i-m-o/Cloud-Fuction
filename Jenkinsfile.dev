@@ -3,8 +3,7 @@ def deployFunction(String functionName) {
      dir("${RUTA_SOURCE}/$functionName/$RUTA_SOURCE_FILES") {
                 withCredentials([file(credentialsId: "${GCP_SERVICE_ACCOUNT1}", variable: 'SECRET_FILE')]) {
                 sh """\$(gcloud auth activate-service-account --key-file=\$SECRET_FILE)"""
-                sh "ls -lsa"
-                sh "pwd"
+
                 sh "gcloud config set project ${GCP_PROJECT_ID}"
                 sh """ gcloud alpha functions deploy ${GCP_NAME} \
                         --gen2 \
