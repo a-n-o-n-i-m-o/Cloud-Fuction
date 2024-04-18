@@ -1,9 +1,8 @@
+
 def deployFunction(String functionName) {
- 
-            withCredentials([file(credentialsId: 'devioz-corporativo-gcp-devops-analitica-dev', variable: 'SECRET')]) {
-                sh "ls -lsa"
-                sh "pwd"
-                sh "gcloud auth activate-service-account --key-file=\$SECRET"
+     
+                withCredentials([file(credentialsId: "${GCP_SERVICE_ACCOUNT1}", variable: 'SECRET_FILE')]) {
+                        sh """\$(gcloud auth activate-service-account --key-file=\$SECRET_FILE)"""
                 sh "gcloud config set project ${GCP_PROJECT_ID}"
                 sh """ gcloud alpha functions deploy ${GCP_NAME} \
                         --gen2 \
