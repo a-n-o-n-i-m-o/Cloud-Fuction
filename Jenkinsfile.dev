@@ -33,34 +33,30 @@ pipeline {
             steps {
                 script {
                     // Definimos la función `deployFunction` dentro de un bloque `script`
+
                     def deployFunction(String functionName) {
-                        dir("${RUTA_SOURCE}/${functionName}/${RUTA_SOURCE_FILES}") {
-                            withCredentials([file(credentialsId: "${GCP_SERVICE_ACCOUNT_CREDENTIALS_ID}", variable: 'SERVICE_ACCOUNT_FILE')]) {
-                                sh """
-                                    # Autentica con la cuenta de servicio
-                                    gcloud auth activate-service-account --key-file=\$SERVICE_ACCOUNT_FILE
-                                    
-                                    # Configura el proyecto
-                                    gcloud config set project ${GCP_PROJECT_ID}
-                                    
-                                    # Despliega la función en Google Cloud
-                                    gcloud functions deploy ${functionName} \
-                                        --gen2 \
-                                        --region=${GCP_LOCATION} \
-                                        --runtime=${GCP_RUNTIME} \
-                                        --trigger-http \
-                                        --memory=${GCP_MEMORY} \
-                                        --entry-point=main \
-                                        --timeout=${GCP_TIMEOUT} \
-                                        --max-instances=${GCP_MAX_INSTANCES} \
-                                        --ingress-settings=all \
-                                        --service-account=${GCP_SERVICE_ACCOUNT_EMAIL} \
-                                        --source=. \
-                                        --env-vars-file=${functionName}/src/.env.yaml \
-                                        --allow-unauthenticated=${GCP_ALLOW_UNAUTHENTICATED}
-                                """
+                        dir("${RUTA_SOURCE}/$functionName/$RUTA_SOURCE_FILES") {
+                                withCredentials([file(credentialsId: "${GCP_SERVICE_ACCOUNT_CREDENTIALS_ID}", variable: 'SECRET')]) {
+                                    sh "ls -lsa"
+                                    sh "pwd"
+                                    sh "gcloud auth activate-service-account --key-file=\$SECRET"
+                                    sh "gcloud config set project ${GCP_PROJECT_ID}"
+                                    sh """ gcloud alpha functions deploy ${functionName} \
+                                            --gen2 \
+                                            --region=${GCP_LOCATION} \
+                                            --runtime=${GCP_RUNTIME} \
+                                            --trigger-http \
+                                            --memory ${GCP_MEMORY} \
+                                            --entry-point=main \
+                                            --timeout ${GCP_TIMEOUT} \
+                                            --max-instances ${GCP_MAXINTANCES} \
+                                            --ingress-settings all \
+                                            --service-account ${GCP_SERVICE_ACCOUNT} \
+                                            --source=. \
+                                            --env-vars-file .env.yaml \
+                                            --allow-unauthenticated """
+                                }
                             }
-                        }
                     }
 
                     // Llamada a la función `deployFunction` para cada función de `functionNames`
