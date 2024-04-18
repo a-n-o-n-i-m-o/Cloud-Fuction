@@ -1,12 +1,10 @@
 pipeline {
     agent any
-    
+
     environment {
-        // Ruta de los archivos fuente
+        // Configuración de la función de Google Cloud
         RUTA_SOURCE = 'source'
         RUTA_SOURCE_FILES = 'src'
-        
-        // Configuración de la función de Google Cloud
         GCP_PROJECT_ID = 'devioz-pe-dev-analitica'
         GCP_SERVICE_ACCOUNT_CREDENTIALS_ID = 'devioz-corporativo-gcp-devops-analitica-dev'
         GCP_SERVICE_ACCOUNT_EMAIL = 'alfredo@devioz-pe-dev-analitica.iam.gserviceaccount.com'
@@ -22,7 +20,7 @@ pipeline {
             'ingesta-crossnet-data-plana'
         ]
     }
-    
+
     stages {
         stage('Descargar Fuentes') {
             steps {
@@ -30,11 +28,11 @@ pipeline {
                 checkout scm // Descarga el código fuente del repositorio
             }
         }
-        
+
         stage('Despliegue Funciones') {
             steps {
                 script {
-                    // Definimos la función de despliegue dentro del bloque `script`
+                    // Definimos la función `deployFunction` dentro de un bloque `script`
                     def deployFunction(String functionName) {
                         dir("${RUTA_SOURCE}/${functionName}/${RUTA_SOURCE_FILES}") {
                             withCredentials([file(credentialsId: "${GCP_SERVICE_ACCOUNT_CREDENTIALS_ID}", variable: 'SERVICE_ACCOUNT_FILE')]) {
@@ -64,15 +62,15 @@ pipeline {
                             }
                         }
                     }
-                    
-                    // Desplegamos cada función
+
+                    // Llamada a la función `deployFunction` para cada función de `functionNames`
                     functionNames.each { functionName ->
                         deployFunction(functionName)
                     }
                 }
             }
         }
-        
+
         stage('Limpiar Workspace') {
             steps {
                 deleteDir() // Limpia el espacio de trabajo
