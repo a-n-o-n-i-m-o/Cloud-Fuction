@@ -35,48 +35,44 @@ def deployFunction(String functionName) {
     }
 }
 
+
 def functionNames = [
     'ingesta-crossnet-data-plana'
-    // Puedes agregar más nombres de funciones a la lista
-]
+]   
 
 pipeline {
-    agent any
 
-    environment {
-        RUTA_SOURCE = 'source'
-        RUTA_SOURCE_FILES = 'src'
-        GCP_NAME = 'ingesta-crossnet-data-plana'
-        GCP_SERVICE_ACCOUNT1 = 'devioz-corporativo-gcp-devops-analitica-dev'
-        GCP_PROJECT_ID = 'devioz-pe-dev-analitica'
-        GCP_SERVICE_ACCOUNT = 'alfredo@devioz-pe-dev-analitica.iam.gserviceaccount.com'
-        GCP_RUNTIME = 'python310'
-        GCP_ENTRY_POINT = 'main'
-        GCP_MEMORY = '16384'
-        GCP_TIMEOUT = 540
-        GCP_MAXINSTANCES = 2
-        GCP_LOCATION = 'us-central1'
-    }
+        agent any
 
-    stages {
+        environment {
+                RUTA_SOURCE = 'source'
+                RUTA_SOURCE_FILES = 'src'
+                GCP_NAME = 'ingesta-crossnet-data-plana'
+                GCP_SERVICE_ACCOUNT1 = 'devioz-corporativo-gcp-devops-analitica-dev'
+                GCP_PROJECT_ID = 'devioz-pe-dev-analitica'
+                GCP_SERVICE_ACCOUNT = 'alfredo@devioz-pe-dev-analitica.iam.gserviceaccount.com'
+                GCP_RUNTIME = 'python310'
+                GCP_ENTRY_POINT = 'main'
+                GCP_MEMORY = '16384'
+                GCP_TIMEOUT = 540
+                GCP_MAXINTANCES = 2
+                GCP_LOCATION = 'us-central1'
+        }
+
+        stages {
         stage('Descargar Fuentes') {
             steps {
                 deleteDir()
-                checkout scm
+                    checkout scm
             }
         }
 
         stage('Despliegue Funciones') {
             steps {
                 script {
-                    // Ejecutar funciones en paralelo para ahorrar tiempo
-                    parallel (
-                        functionNames.collect { functionName ->
-                            {
-                                deployFunction(functionName)
-                            }
-                        }
-                    )
+                    functionNames.each { functionName ->
+                        deployFunction(functionName)
+                    }
                 }
             }
         }
