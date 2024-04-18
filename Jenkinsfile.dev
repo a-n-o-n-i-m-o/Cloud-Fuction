@@ -20,14 +20,11 @@ def deployFunction(String functionName) {
          }
      }
 }
-def functionNames = [
-    'ingesta-crossnet-data-plana'
-]     
+
 pipeline {
     agent any
 
     environment {
-        // Configuración de la función de Google Cloud
         RUTA_SOURCE = 'source'
         RUTA_SOURCE_FILES = 'src'
         GCP_PROJECT_ID = 'devioz-pe-dev-analitica'
@@ -37,9 +34,13 @@ pipeline {
         GCP_RUNTIME = 'python310'
         GCP_MEMORY = '16384MB'
         GCP_TIMEOUT = '540s'
-        GCP_MAX_INSTANCES = 2
+        GCP_MAX_INSTANCES = 2 // Variable definida correctamente como GCP_MAX_INSTANCES
         GCP_ALLOW_UNAUTHENTICATED = true
         
+        // Nombres de las funciones a desplegar
+        functionNames = [
+            'ingesta-crossnet-data-plana'
+        ]
     }
 
     stages {
