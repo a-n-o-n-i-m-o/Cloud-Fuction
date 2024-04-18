@@ -1,65 +1,82 @@
-
 def deployFunction(String functionName) {
-     dir("${RUTA_SOURCE}/$functionName/$RUTA_SOURCE_FILES") {
-                withCredentials([file(credentialsId: "${GCP_SERVICE_ACCOUNT1}", variable: 'SECRET_FILE')]) {
-                sh """\$(gcloud auth activate-service-account --key-file=\$SECRET_FILE)"""
+    dir("${RUTA_SOURCE}/${functionName}/${RUTA_SOURCE_FILES}") {
+        withCredentials([file(credentialsId: "${GCP_SERVICE_ACCOUNT1}", variable: 'SECRET_FILE')]) {
+            sh "gcloud auth activate-service-account --key-file=\$SECRET_FILE"
 
-                sh "gcloud config set project ${GCP_PROJECT_ID}"
-                sh """ gcloud alpha functions deploy ${GCP_NAME} \
-                        --gen2 \
-                        --region=${GCP_LOCATION} \
-                        --runtime=${GCP_RUNTIME} \
-                        --trigger-http \
-                        --memory ${GCP_MEMORY} \
-                        --entry-point ${GCP_ENTRY_POINT} \
-                        --timeout ${GCP_TIMEOUT} \
-                        --max-instances ${GCP_MAXINTANCES} \
-                        --ingress-settings all \
-                        --service-account ${GCP_SERVICE_ACCOUNT} \
-                        --source=. \
-                        --env-vars-file source/$fuctionNames/src.env.yaml \
-                        --allow-unauthenticated """
+            sh "gcloud config set project ${GCP_PROJECT_ID}"
+            
+            // Verifica si el archivo de variables de entorno existe
+            def envFilePath = "${RUTA_SOURCE}/${functionName}/${RUTA_SOURCE_FILES}/.env.yaml"
+            if (fileExists(envFilePath)) {
+                try {
+                    sh """gcloud alpha functions deploy ${functionName} \
+                            --gen2 \
+                            --region=${GCP_LOCATION} \
+                            --runtime=${GCP_RUNTIME} \
+                            --trigger-http \
+                            --memory ${GCP_MEMORY} \
+                            --entry-point ${GCP_ENTRY_POINT} \
+                            --timeout ${GCP_TIMEOUT} \
+                            --max-instances ${GCP_MAXINSTANCES} \
+                            --ingress-settings all \
+                            --service-account ${GCP_SERVICE_ACCOUNT} \
+                            --source=. \
+                            --env-vars-file ${envFilePath} \
+                            --allow-unauthenticated"""
+                } catch (Exception e) {
+                    echo "Error deploying function ${functionName}: ${e.message}"
+                    // Manejar error según tus necesidades (ej. marcar como fallida, notificaciones, etc.)
                 }
+            } else {
+                echo "Environment file not found for function ${functionName}: ${envFilePath}"
+                // Manejar la falta del archivo de entorno según tus necesidades
+            }
         }
+    }
 }
 
 def functionNames = [
     'ingesta-crossnet-data-plana'
+    // Puedes agregar más nombres de funciones a la lista
 ]
 
 pipeline {
+    agent any
 
-        agent any
+    environment {
+        RUTA_SOURCE = 'source'
+        RUTA_SOURCE_FILES = 'src'
+        GCP_NAME = 'ingesta-crossnet-data-plana'
+        GCP_SERVICE_ACCOUNT1 = 'devioz-corporativo-gcp-devops-analitica-dev'
+        GCP_PROJECT_ID = 'devioz-pe-dev-analitica'
+        GCP_SERVICE_ACCOUNT = 'alfredo@devioz-pe-dev-analitica.iam.gserviceaccount.com'
+        GCP_RUNTIME = 'python310'
+        GCP_ENTRY_POINT = 'main'
+        GCP_MEMORY = '16384'
+        GCP_TIMEOUT = 540
+        GCP_MAXINSTANCES = 2
+        GCP_LOCATION = 'us-central1'
+    }
 
-        environment {
-                RUTA_SOURCE = 'source'
-                RUTA_SOURCE_FILES = 'src'
-                GCP_NAME = 'ingesta-crossnet-data-plana'
-                GCP_SERVICE_ACCOUNT1 = 'devioz-corporativo-gcp-devops-analitica-dev'
-                GCP_PROJECT_ID = 'devioz-pe-dev-analitica'
-                GCP_SERVICE_ACCOUNT = 'alfredo@devioz-pe-dev-analitica.iam.gserviceaccount.com'
-                GCP_RUNTIME = 'python310'
-                GCP_ENTRY_POINT = 'main'
-                GCP_MEMORY = '16384'
-                GCP_TIMEOUT = 540
-                GCP_MAXINTANCES = 2
-                GCP_LOCATION = 'us-central1'
-        }
-
-        stages {
+    stages {
         stage('Descargar Fuentes') {
             steps {
                 deleteDir()
-                    checkout scm
+                checkout scm
             }
         }
 
         stage('Despliegue Funciones') {
             steps {
                 script {
-                    functionNames.each { functionName ->
-                        deployFunction(functionName)
-                    }
+                    // Ejecutar funciones en paralelo para ahorrar tiempo
+                    parallel (
+                        functionNames.collect { functionName ->
+                            {
+                                deployFunction(functionName)
+                            }
+                        }
+                    )
                 }
             }
         }
