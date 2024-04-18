@@ -17,7 +17,7 @@ def deployFunction(String functionName) {
                         --ingress-settings all \
                         --service-account ${GCP_SERVICE_ACCOUNT} \
                         --source=. \
-                        --env-vars-file .env.yaml \
+                        --env-vars-file source/$fuctionNames/src.env.yaml \
                         --allow-unauthenticated """
                 }
         }
