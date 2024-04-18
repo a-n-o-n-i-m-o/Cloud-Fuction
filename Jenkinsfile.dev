@@ -8,13 +8,13 @@ pipeline {
         
         // Configuración de la función de Google Cloud
         GCP_PROJECT_ID = 'devioz-pe-dev-analitica'
-        GCP_SERVICE_ACCOUNT = 'devioz-corporativo-gcp-devops-analitica-dev'
+        GCP_SERVICE_ACCOUNT_CREDENTIALS_ID = 'devioz-corporativo-gcp-devops-analitica-dev'
         GCP_SERVICE_ACCOUNT_EMAIL = 'alfredo@devioz-pe-dev-analitica.iam.gserviceaccount.com'
         GCP_LOCATION = 'us-central1'
         GCP_RUNTIME = 'python310'
         GCP_MEMORY = '16384MB'
         GCP_TIMEOUT = '540s'
-        GCP_MAX_INSTANCES = '2'
+        GCP_MAX_INSTANCES = 2
         GCP_ALLOW_UNAUTHENTICATED = true
         
         // Nombres de las funciones a desplegar
@@ -34,6 +34,38 @@ pipeline {
         stage('Despliegue Funciones') {
             steps {
                 script {
+                    // Definimos la función de despliegue dentro del bloque `script`
+                    def deployFunction(String functionName) {
+                        dir("${RUTA_SOURCE}/${functionName}/${RUTA_SOURCE_FILES}") {
+                            withCredentials([file(credentialsId: "${GCP_SERVICE_ACCOUNT_CREDENTIALS_ID}", variable: 'SERVICE_ACCOUNT_FILE')]) {
+                                sh """
+                                    # Autentica con la cuenta de servicio
+                                    gcloud auth activate-service-account --key-file=\$SERVICE_ACCOUNT_FILE
+                                    
+                                    # Configura el proyecto
+                                    gcloud config set project ${GCP_PROJECT_ID}
+                                    
+                                    # Despliega la función en Google Cloud
+                                    gcloud functions deploy ${functionName} \
+                                        --gen2 \
+                                        --region=${GCP_LOCATION} \
+                                        --runtime=${GCP_RUNTIME} \
+                                        --trigger-http \
+                                        --memory=${GCP_MEMORY} \
+                                        --entry-point=main \
+                                        --timeout=${GCP_TIMEOUT} \
+                                        --max-instances=${GCP_MAX_INSTANCES} \
+                                        --ingress-settings=all \
+                                        --service-account=${GCP_SERVICE_ACCOUNT_EMAIL} \
+                                        --source=. \
+                                        --env-vars-file=${functionName}/src/.env.yaml \
+                                        --allow-unauthenticated=${GCP_ALLOW_UNAUTHENTICATED}
+                                """
+                            }
+                        }
+                    }
+                    
+                    // Desplegamos cada función
                     functionNames.each { functionName ->
                         deployFunction(functionName)
                     }
@@ -44,36 +76,6 @@ pipeline {
         stage('Limpiar Workspace') {
             steps {
                 deleteDir() // Limpia el espacio de trabajo
-            }
-        }
-    }
-    
-    // Función para desplegar una función en Google Cloud
-    def deployFunction(String functionName) {
-        dir("${RUTA_SOURCE}/${functionName}/${RUTA_SOURCE_FILES}") {
-            withCredentials([file(credentialsId: "${GCP_SERVICE_ACCOUNT}", variable: 'SERVICE_ACCOUNT_FILE')]) {
-                sh """
-                # Autentica el servicio de cuenta
-                gcloud auth activate-service-account --key-file=\$SERVICE_ACCOUNT_FILE
-                
-                # Configura el ID del proyecto
-                gcloud config set project ${GCP_PROJECT_ID}
-                
-                # Despliega la función de Google Cloud
-                gcloud functions deploy ${functionName} \
-                    --gen2 \
-                    --region=${GCP_LOCATION} \
-                    --runtime=${GCP_RUNTIME} \
-                    --trigger-http \
-                    --memory=${GCP_MEMORY} \
-                    --entry-point=main \
-                    --timeout=${GCP_TIMEOUT} \
-                    --max-instances=${GCP_MAX_INSTANCES} \
-                    --ingress-settings=all \
-                    --service-account=${GCP_SERVICE_ACCOUNT_EMAIL} \
-                    --source=. \
-                    --allow-unauthenticated=${GCP_ALLOW_UNAUTHENTICATED}
-                """
             }
         }
     }
