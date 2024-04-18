@@ -22,7 +22,9 @@
                                 }
                             }
                     }
-                    
+               def functionNames = [
+    'ingesta-crossnet-data-plana'
+]     
 pipeline {
     agent any
 
@@ -40,10 +42,6 @@ pipeline {
         GCP_MAX_INSTANCES = 2
         GCP_ALLOW_UNAUTHENTICATED = true
         
-        // Nombres de las funciones a desplegar
-        functionNames = [
-            'ingesta-crossnet-data-plana'
-        ]
     }
 
     stages {
