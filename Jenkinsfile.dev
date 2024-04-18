@@ -24,24 +24,25 @@ def deployFunction(String functionName) {
 pipeline {
     agent any
 
-    environment {
-        RUTA_SOURCE = 'source'
-        RUTA_SOURCE_FILES = 'src'
-        GCP_PROJECT_ID = 'devioz-pe-dev-analitica'
-        GCP_SERVICE_ACCOUNT_CREDENTIALS_ID = 'devioz-corporativo-gcp-devops-analitica-dev'
-        GCP_SERVICE_ACCOUNT_EMAIL = 'alfredo@devioz-pe-dev-analitica.iam.gserviceaccount.com'
-        GCP_LOCATION = 'us-central1'
-        GCP_RUNTIME = 'python310'
-        GCP_MEMORY = '16384MB'
-        GCP_TIMEOUT = '540s'
-        GCP_MAX_INSTANCES = 2 // Variable definida correctamente como GCP_MAX_INSTANCES
-        GCP_ALLOW_UNAUTHENTICATED = true
-        
-        // Nombres de las funciones a desplegar
-        functionNames = [
-            'ingesta-crossnet-data-plana'
-        ]
-    }
+environment {
+    RUTA_SOURCE = 'source'
+    RUTA_SOURCE_FILES = 'src'
+    GCP_PROJECT_ID = 'devioz-pe-dev-analitica'
+    GCP_SERVICE_ACCOUNT_CREDENTIALS_ID = 'devioz-corporativo-gcp-devops-analitica-dev'
+    GCP_SERVICE_ACCOUNT_EMAIL = 'alfredo@devioz-pe-dev-analitica.iam.gserviceaccount.com'
+    GCP_LOCATION = 'us-central1'
+    GCP_RUNTIME = 'python310'
+    GCP_MEMORY = '16384MB'
+    GCP_TIMEOUT = '540s'
+    GCP_MAX_INSTANCES = 2 // Mantén el valor numérico, no es necesario ponerlo entre comillas
+    GCP_ALLOW_UNAUTHENTICATED = true // Mantén el valor booleano, no es necesario ponerlo entre comillas
+    
+    // Asegúrate de que los valores de `functionNames` estén entre comillas
+    functionNames = [
+        'ingesta-crossnet-data-plana'
+    ]
+}
+
 
     stages {
         stage('Descargar Fuentes') {
